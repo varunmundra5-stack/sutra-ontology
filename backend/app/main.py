@@ -68,27 +68,53 @@ def _seed_ontology() -> None:
     if n > 100:
         log.info(f"Ontology already loaded ({n} triples) — skipping reseed.")
         return
-    log.info("Loading core ontology + SHACL shapes + product profiles + synthetic data into Fuseki…")
+    log.info("Loading ontology + SHACL + synthetic data into Fuseki…")
     loaded = fuseki.load_all_ontology()
     n = fuseki.count_triples()
     log.info(f"Loaded {len(loaded)} TTL files → {n} triples")
 
 
+def _critical_startup() -> None:
+    """Synchronous DB setup — runs in thread pool so event loop stays free."""
+    try:
+        Base.metadata.create_all(bind=engine)
+        log.info("DB schema ready.")
+    except Exception as e:
+        log.error(f"DB schema creation failed: {e}")
+
+    try:
+        _seed_admin()
+    except Exception as e:
+        log.error(f"Admin seeding failed: {e}")
+
+    try:
+        timescale.ensure_hypertable()
+    except Exception as e:
+        log.warning(f"Hypertable setup failed: {e}")
+
+
 async def _background_init() -> None:
-    """Slow startup tasks run in thread-pool after server is live.
+    """Slow startup tasks — fire-and-forget after server is live.
 
-    Keeps the event loop free so /health passes immediately and Render
-    does not kill the container during the Fuseki / OPA warm-up window.
+    Runs in thread-pool workers so blocking I/O (HTTP polls, file reads)
+    never stalls the event loop or the /health endpoint.
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
-    # Wait for soft dependencies (blocking calls → thread pool)
-    await loop.run_in_executor(
-        None, lambda: _wait_for(f"{settings.fuseki_url}/$/ping", "Fuseki")
-    )
-    await loop.run_in_executor(
-        None, lambda: _wait_for(f"{settings.opa_url}/health", "OPA", max_wait_s=30)
-    )
+    # Wait for soft dependencies
+    try:
+        await loop.run_in_executor(
+            None, lambda: _wait_for(f"{settings.fuseki_url}/$/ping", "Fuseki")
+        )
+    except Exception as e:
+        log.warning(f"Fuseki wait failed: {e}")
+
+    try:
+        await loop.run_in_executor(
+            None, lambda: _wait_for(f"{settings.opa_url}/health", "OPA", max_wait_s=30)
+        )
+    except Exception as e:
+        log.warning(f"OPA wait failed: {e}")
 
     # Load ontology into Fuseki
     try:
@@ -102,39 +128,41 @@ async def _background_init() -> None:
     except Exception as e:
         log.warning(f"SHACL preload failed: {e}")
 
-    # Touch Valkey + ArcadeDB (non-fatal)
-    valkey_ok = await loop.run_in_executor(None, valkey_client.ping)
-    if valkey_ok:
-        log.info("Valkey: connected.")
-    arcade_ok = await loop.run_in_executor(None, arcadedb_client.health)
-    if arcade_ok:
-        try:
+    # Touch optional services
+    try:
+        valkey_ok = await loop.run_in_executor(None, valkey_client.ping)
+        if valkey_ok:
+            log.info("Valkey: connected.")
+        else:
+            log.warning("Valkey: not reachable (non-fatal).")
+    except Exception as e:
+        log.warning(f"Valkey check failed: {e}")
+
+    try:
+        arcade_ok = await loop.run_in_executor(None, arcadedb_client.health)
+        if arcade_ok:
             await loop.run_in_executor(None, arcadedb_client.ensure_database)
             log.info("ArcadeDB: connected.")
-        except Exception as e:
-            log.warning(f"ArcadeDB ensure_database skipped: {e}")
+        else:
+            log.warning("ArcadeDB: not reachable (non-fatal).")
+    except Exception as e:
+        log.warning(f"ArcadeDB check failed: {e}")
 
     log.info("Background init complete.")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    loop = asyncio.get_event_loop()
+    # Run critical (but gracefully-failing) DB setup in thread pool
+    # so the event loop is never blocked and /health works immediately.
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, _critical_startup)
 
-    # --- Fast critical startup (run in thread pool so event loop stays free) ---
-    # 1. Relational / time-series schema
-    await loop.run_in_executor(
-        None, lambda: Base.metadata.create_all(bind=engine)
-    )
-    await loop.run_in_executor(None, _seed_admin)
-    await loop.run_in_executor(None, timescale.ensure_hypertable)
-
-    # --- Server is ready to serve requests from this point ---
-    # Kick off slow initialisation (Fuseki wait, ontology load) in background
+    # Kick off slow background work — server is live from here
     asyncio.create_task(_background_init())
 
     yield
-    # Shutdown: nothing to tear down currently
+    # Shutdown — nothing to tear down
 
 
 app = FastAPI(
