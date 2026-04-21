@@ -3,12 +3,8 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .config import settings
 
-# Render Postgres requires SSL; append if not in URL
-db_url = settings.database_url
-if "sslmode=" not in db_url:
-    db_url += "?sslmode=require"
-
-engine = create_engine(db_url, pool_pre_ping=True)
+# Use URL as-is; psycopg2 will auto-negotiate SSL with Render Postgres
+engine = create_engine(settings.database_url, pool_pre_ping=True, pool_size=5, max_overflow=10)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
