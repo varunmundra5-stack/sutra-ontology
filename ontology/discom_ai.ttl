@@ -1,0 +1,61 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+@prefix da:   <https://ontology.energystack.in/discom_ai#> .
+
+############################################################
+# Product Profile: DISCOM AI Platform
+# Consumers: DISCOMs, SLDCs
+# Adds revenue-protection, anomaly-detection, and subsidy-
+# reconciliation classes that sit on top of the core ontology.
+############################################################
+
+<https://ontology.energystack.in/discom_ai> a owl:Ontology ;
+    dct:title       "Sutra OS — DISCOM AI Profile" ;
+    dct:description "Revenue protection, theft detection, and subsidy reconciliation profile." ;
+    owl:versionInfo "1.0.0" ;
+    owl:imports     <https://ontology.energystack.in/core> .
+
+da:RevenueRiskScore a owl:Class ;
+    rdfs:subClassOf es:AIInference ;
+    rdfs:label   "Revenue Risk Score" ;
+    rdfs:comment "Per-consumer score of billing/collection risk." .
+
+da:TheftAlert a owl:Class ;
+    rdfs:subClassOf es:AnomalyEvent ;
+    rdfs:label   "Theft Alert" ;
+    rdfs:comment "High-confidence anomaly flagged as likely theft / meter tamper." .
+
+da:SubsidyReconciliation a owl:Class ;
+    rdfs:subClassOf es:GovernanceRecord ;
+    rdfs:label   "Subsidy Reconciliation" ;
+    rdfs:comment "Reconciliation record between subsidy claimed vs. metered consumption." .
+
+da:RecoveryRecommendation a owl:Class ;
+    rdfs:subClassOf es:AIInference ;
+    rdfs:label   "Recovery Recommendation" ;
+    rdfs:comment "Suggested recovery action (notice, site visit, legal) for a flagged consumer." .
+
+da:riskScore a owl:DatatypeProperty ;
+    rdfs:domain da:RevenueRiskScore ;
+    rdfs:range  xsd:double ;
+    rdfs:comment "0.0 – 1.0 probability of non-recoverable revenue." .
+
+da:recommendedAction a owl:DatatypeProperty ;
+    rdfs:domain da:RecoveryRecommendation ;
+    rdfs:range  xsd:string .
+
+da:subsidyClaimedInr a owl:DatatypeProperty ;
+    rdfs:domain da:SubsidyReconciliation ;
+    rdfs:range  xsd:double .
+
+da:subsidyJustifiedInr a owl:DatatypeProperty ;
+    rdfs:domain da:SubsidyReconciliation ;
+    rdfs:range  xsd:double .
+
+da:reconciliationGapInr a owl:DatatypeProperty ;
+    rdfs:domain da:SubsidyReconciliation ;
+    rdfs:range  xsd:double ;
+    rdfs:comment "Claimed minus justified. Positive = over-claim." .

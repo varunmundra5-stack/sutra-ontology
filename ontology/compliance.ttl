@@ -1,0 +1,119 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+
+<https://ontology.energystack.in/core/compliance> a owl:Ontology ;
+    rdfs:label "Compliance Module" ;
+    rdfs:comment "Emission factors, MRV records, carbon credits, subsidy claims. Includes OWL restriction: CarbonCredit requires MRVRecord + GridAsset." .
+
+############################################################
+# Classes (4)
+############################################################
+
+es:EmissionFactor a owl:Class ;
+    rdfs:label       "Emission Factor" ;
+    rdfs:comment     "Emission factor value (IPCC, BEE, CPCB) with vintage." ;
+    rdfs:subClassOf  es:DataSource .
+
+es:MRVRecord a owl:Class ;
+    rdfs:label       "MRV Record" ;
+    rdfs:comment     "Monitoring, Reporting & Verification record — links activity data to emissions calc." ;
+    rdfs:subClassOf  es:EnergyEvent .
+
+es:SubsidyClaim a owl:Class ;
+    rdfs:label       "Subsidy Claim" ;
+    rdfs:subClassOf  es:GovernanceRecord .
+
+es:CarbonCredit a owl:Class ;
+    rdfs:label       "Carbon Credit" ;
+    rdfs:comment     "Minted carbon credit. OWL restriction: must link to MRVRecord AND a GridAsset." ;
+    rdfs:subClassOf  es:GovernanceRecord ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty    es:verifiedBy ;
+        owl:minCardinality "1"^^xsd:nonNegativeInteger
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty    es:sourceAsset ;
+        owl:minCardinality "1"^^xsd:nonNegativeInteger
+    ] .
+
+############################################################
+# Properties
+############################################################
+
+es:efValue a owl:DatatypeProperty ;
+    rdfs:domain es:EmissionFactor ;
+    rdfs:range  xsd:double .
+
+es:efUnit a owl:DatatypeProperty ;
+    rdfs:domain es:EmissionFactor ;
+    rdfs:range  xsd:string .
+
+es:efVintage a owl:DatatypeProperty ;
+    rdfs:domain es:EmissionFactor ;
+    rdfs:range  xsd:integer .
+
+es:efSource a owl:DatatypeProperty ;
+    rdfs:domain es:EmissionFactor ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "IPCC | BEE | CPCB" .
+
+es:mrvAsset a owl:ObjectProperty ;
+    rdfs:domain es:MRVRecord ;
+    rdfs:range  es:GridAsset .
+
+es:mrvActivity a owl:DatatypeProperty ;
+    rdfs:domain es:MRVRecord ;
+    rdfs:range  xsd:string .
+
+es:mrvKwh a owl:DatatypeProperty ;
+    rdfs:domain es:MRVRecord ;
+    rdfs:range  xsd:double .
+
+es:mrvStatus a owl:DatatypeProperty ;
+    rdfs:domain es:MRVRecord ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "pending | verified | rejected" .
+
+es:verifiedBy a owl:ObjectProperty ;
+    rdfs:domain es:CarbonCredit ;
+    rdfs:range  es:MRVRecord ;
+    rdfs:comment "Chain: CarbonCredit → MRVRecord" .
+
+es:sourceAsset a owl:ObjectProperty ;
+    rdfs:domain es:CarbonCredit ;
+    rdfs:range  es:GridAsset ;
+    rdfs:comment "Chain: CarbonCredit → GridAsset" .
+
+es:creditVintage a owl:DatatypeProperty ;
+    rdfs:domain es:CarbonCredit ;
+    rdfs:range  xsd:integer .
+
+es:creditQty a owl:DatatypeProperty ;
+    rdfs:domain es:CarbonCredit ;
+    rdfs:range  xsd:double ;
+    rdfs:comment "tonnes CO2e." .
+
+es:methodology a owl:DatatypeProperty ;
+    rdfs:domain es:CarbonCredit ;
+    rdfs:range  xsd:string .
+
+es:claimScheme a owl:DatatypeProperty ;
+    rdfs:domain es:SubsidyClaim ;
+    rdfs:range  xsd:string .
+
+es:claimAmount a owl:DatatypeProperty ;
+    rdfs:domain es:SubsidyClaim ;
+    rdfs:range  xsd:double .
+
+es:claimStatus a owl:DatatypeProperty ;
+    rdfs:domain es:SubsidyClaim ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "pending | approved | held | rejected" .
+
+es:claimAsset a owl:ObjectProperty ;
+    rdfs:domain es:SubsidyClaim ;
+    rdfs:range  es:GridAsset .

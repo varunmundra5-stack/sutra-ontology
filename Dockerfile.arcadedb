@@ -1,0 +1,9 @@
+FROM arcadedata/arcadedb:24.11.1
+
+# ArcadeDB data persists on /home/arcadedb/databases (Render disk mounted here).
+# Root password set via JAVA_OPTS env var.
+
+EXPOSE 2480 2424
+
+HEALTHCHECK --interval=20s --timeout=8s --retries=10 \
+  CMD wget -qO- http://localhost:2480/api/v1/ready || exit 1

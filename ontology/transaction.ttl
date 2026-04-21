@@ -1,0 +1,59 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+
+<https://ontology.energystack.in/core/transaction> a owl:Ontology ;
+    rdfs:label "Transaction Module" ;
+    rdfs:comment "Billing, payment, subsidy disbursement, and anomaly events." .
+
+############################################################
+# Classes (4)
+############################################################
+
+es:BillingEvent a owl:Class ;
+    rdfs:label       "Billing Event" ;
+    rdfs:subClassOf  es:EnergyEvent .
+
+es:PaymentEvent a owl:Class ;
+    rdfs:label       "Payment Event" ;
+    rdfs:subClassOf  es:EnergyEvent .
+
+es:SubsidyEvent a owl:Class ;
+    rdfs:label       "Subsidy Event" ;
+    rdfs:comment     "Subsidy disbursement event (DBT, state scheme)." ;
+    rdfs:subClassOf  es:EnergyEvent .
+
+es:AnomalyEvent a owl:Class ;
+    rdfs:label       "Anomaly Event" ;
+    rdfs:comment     "AI- or rule-detected anomaly: theft, fault, outage, abnormal generation." ;
+    rdfs:subClassOf  es:EnergyEvent .
+
+############################################################
+# Properties (5)
+############################################################
+
+es:billedTo a owl:ObjectProperty ;
+    rdfs:domain es:BillingEvent ;
+    rdfs:range  es:Consumer .
+
+es:billedAmount a owl:DatatypeProperty ;
+    rdfs:domain es:BillingEvent ;
+    rdfs:range  xsd:double .
+
+es:paidAmount a owl:DatatypeProperty ;
+    rdfs:domain es:PaymentEvent ;
+    rdfs:range  xsd:double .
+
+es:subsidyScheme a owl:DatatypeProperty ;
+    rdfs:domain es:SubsidyEvent ;
+    rdfs:range  xsd:string .
+
+es:anomalyType a owl:DatatypeProperty ;
+    rdfs:domain es:AnomalyEvent ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "theft | fault | outage | abnormal_generation" .
+
+es:anomalyTarget a owl:ObjectProperty ;
+    rdfs:domain es:AnomalyEvent ;
+    rdfs:range  es:EnergyEntity .

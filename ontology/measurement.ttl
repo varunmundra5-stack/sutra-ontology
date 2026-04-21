@@ -1,0 +1,85 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+
+<https://ontology.energystack.in/core/measurement> a owl:Ontology ;
+    rdfs:label "Measurement Module" ;
+    rdfs:comment "Sensor readings, load readings, AT&C loss aggregations, demand forecasts." .
+
+############################################################
+# Classes (4)
+############################################################
+
+es:SensorReading a owl:Class ;
+    rdfs:label       "Sensor Reading" ;
+    rdfs:comment     "Instantaneous telemetry from SCADA/IoT sensors (voltage, current, temp, vibration)." ;
+    rdfs:subClassOf  es:EnergyEvent .
+
+es:LoadReading a owl:Class ;
+    rdfs:label       "Load Reading" ;
+    rdfs:comment     "15-min interval meter reading (kWh, power factor, voltage)." ;
+    rdfs:subClassOf  es:EnergyEvent .
+
+es:ATCLossRecord a owl:Class ;
+    rdfs:label       "AT&C Loss Record" ;
+    rdfs:comment     "Aggregated technical + commercial loss for a feeder over a period." ;
+    rdfs:subClassOf  es:EnergyEvent .
+
+es:DemandForecast a owl:Class ;
+    rdfs:label       "Demand Forecast" ;
+    rdfs:comment     "AI-produced load forecast per feeder over N horizon slots." ;
+    rdfs:subClassOf  es:AIInference .
+
+############################################################
+# Properties (6)
+############################################################
+
+es:measuredAsset a owl:ObjectProperty ;
+    rdfs:domain es:SensorReading ;
+    rdfs:range  es:GridAsset .
+
+es:feederRef a owl:ObjectProperty ;
+    rdfs:range  es:Feeder ;
+    rdfs:comment "Attach a LoadReading, ATCLossRecord, or DemandForecast to a Feeder." .
+
+es:voltage a owl:DatatypeProperty ;
+    rdfs:range  xsd:double .
+
+es:current a owl:DatatypeProperty ;
+    rdfs:range  xsd:double .
+
+es:temperature a owl:DatatypeProperty ;
+    rdfs:range  xsd:double .
+
+es:kwh a owl:DatatypeProperty ;
+    rdfs:domain es:LoadReading ;
+    rdfs:range  xsd:double .
+
+es:powerFactor a owl:DatatypeProperty ;
+    rdfs:domain es:LoadReading ;
+    rdfs:range  xsd:double .
+
+es:billedKwh a owl:DatatypeProperty ;
+    rdfs:domain es:ATCLossRecord ;
+    rdfs:range  xsd:double .
+
+es:collectedKwh a owl:DatatypeProperty ;
+    rdfs:domain es:ATCLossRecord ;
+    rdfs:range  xsd:double .
+
+es:distributedKwh a owl:DatatypeProperty ;
+    rdfs:domain es:ATCLossRecord ;
+    rdfs:range  xsd:double .
+
+es:lossPct a owl:DatatypeProperty ;
+    rdfs:domain es:ATCLossRecord ;
+    rdfs:range  xsd:double .
+
+es:horizonSlots a owl:DatatypeProperty ;
+    rdfs:domain es:DemandForecast ;
+    rdfs:range  xsd:integer .
+
+es:mapeScore a owl:DatatypeProperty ;
+    rdfs:domain es:DemandForecast ;
+    rdfs:range  xsd:double .

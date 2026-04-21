@@ -1,0 +1,156 @@
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+
+############################################################
+# Sutra OS — SHACL shapes
+# Contract enforced on ingest and on manual creates.
+# Run via: pyshacl (data_graph=fuseki snapshot, shapes_graph=this file).
+############################################################
+
+es:LocationShape a sh:NodeShape ;
+    sh:targetClass es:Location ;
+    sh:property [
+        sh:path es:latitude ;
+        sh:datatype xsd:double ;
+        sh:minInclusive -90.0 ;
+        sh:maxInclusive 90.0 ;
+        sh:maxCount 1 ;
+        sh:message "Location.latitude must be a single xsd:double in [-90, 90]." ;
+    ] ;
+    sh:property [
+        sh:path es:longitude ;
+        sh:datatype xsd:double ;
+        sh:minInclusive -180.0 ;
+        sh:maxInclusive 180.0 ;
+        sh:maxCount 1 ;
+        sh:message "Location.longitude must be a single xsd:double in [-180, 180]." ;
+    ] .
+
+es:TemporalSlotShape a sh:NodeShape ;
+    sh:targetClass es:TemporalSlot ;
+    sh:property [
+        sh:path es:startTs ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "TemporalSlot must have exactly one startTs." ;
+    ] ;
+    sh:property [
+        sh:path es:endTs ;
+        sh:datatype xsd:dateTime ;
+        sh:maxCount 1 ;
+    ] .
+
+es:TransformerShape a sh:NodeShape ;
+    sh:targetClass es:Transformer ;
+    sh:property [
+        sh:path es:ratingKva ;
+        sh:datatype xsd:double ;
+        sh:minExclusive 0.0 ;
+        sh:maxCount 1 ;
+        sh:message "Transformer.ratingKva must be > 0." ;
+    ] ;
+    sh:property [
+        sh:path es:voltageLevel ;
+        sh:datatype xsd:string ;
+        sh:in ( "LT" "11kV" "33kV" "66kV" "132kV" "220kV" "400kV" ) ;
+        sh:maxCount 1 ;
+    ] .
+
+es:FeederShape a sh:NodeShape ;
+    sh:targetClass es:Feeder ;
+    sh:property [
+        sh:path es:feederType ;
+        sh:datatype xsd:string ;
+        sh:in ( "urban" "rural" "industrial" "mixed" "agricultural" ) ;
+        sh:maxCount 1 ;
+    ] .
+
+es:ConsumerShape a sh:NodeShape ;
+    sh:targetClass es:Consumer ;
+    sh:property [
+        sh:path es:consumerCategory ;
+        sh:datatype xsd:string ;
+        sh:in ( "domestic" "commercial" "industrial" "agricultural" "public" ) ;
+        sh:maxCount 1 ;
+    ] .
+
+es:LoadReadingShape a sh:NodeShape ;
+    sh:targetClass es:LoadReading ;
+    sh:property [
+        sh:path es:kwh ;
+        sh:datatype xsd:double ;
+        sh:minInclusive 0.0 ;
+        sh:maxCount 1 ;
+        sh:message "LoadReading.kwh must be >= 0." ;
+    ] ;
+    sh:property [
+        sh:path es:atTime ;
+        sh:minCount 1 ;
+        sh:message "Every LoadReading must be anchored in time via atTime." ;
+    ] .
+
+es:ATCLossRecordShape a sh:NodeShape ;
+    sh:targetClass es:ATCLossRecord ;
+    sh:property [
+        sh:path es:lossPct ;
+        sh:datatype xsd:double ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 100.0 ;
+        sh:maxCount 1 ;
+        sh:message "ATCLossRecord.lossPct must be in [0, 100]." ;
+    ] ;
+    sh:property [
+        sh:path es:feederRef ;
+        sh:minCount 1 ;
+        sh:message "ATCLossRecord must reference a feeder via feederRef." ;
+    ] .
+
+# Carbon credits — strict chain enforcement.
+# Every CarbonCredit MUST:
+#   1. be verified by exactly one MRVRecord
+#   2. trace to at least one GridAsset
+#   3. have a positive tonnesCO2e
+es:CarbonCreditShape a sh:NodeShape ;
+    sh:targetClass es:CarbonCredit ;
+    sh:property [
+        sh:path es:verifiedBy ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:class es:MRVRecord ;
+        sh:message "CarbonCredit must be verifiedBy exactly one MRVRecord." ;
+    ] ;
+    sh:property [
+        sh:path es:sourceAsset ;
+        sh:minCount 1 ;
+        sh:class es:GridAsset ;
+        sh:message "CarbonCredit must reference at least one sourceAsset (GridAsset)." ;
+    ] ;
+    sh:property [
+        sh:path es:tonnesCO2e ;
+        sh:datatype xsd:double ;
+        sh:minExclusive 0.0 ;
+        sh:maxCount 1 ;
+        sh:message "CarbonCredit.tonnesCO2e must be > 0." ;
+    ] .
+
+# Consent contract — every ConsentArtifact must declare scope + validity.
+es:ConsentArtifactShape a sh:NodeShape ;
+    sh:targetClass es:ConsentArtifact ;
+    sh:property [
+        sh:path es:grantedBy ;
+        sh:minCount 1 ;
+        sh:message "ConsentArtifact.grantedBy is required." ;
+    ] ;
+    sh:property [
+        sh:path es:scope ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+    ] ;
+    sh:property [
+        sh:path es:validUntil ;
+        sh:datatype xsd:dateTime ;
+        sh:maxCount 1 ;
+    ] .

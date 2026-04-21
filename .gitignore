@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# macOS
+.DS_Store
+
+# Docker local volumes
+sutra_pg_data
+sutra_fuseki_data
+sutra_arcadedb_data
+sutra_valkey_data

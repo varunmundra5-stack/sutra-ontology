@@ -1,0 +1,74 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+@prefix cl:   <https://ontology.energystack.in/carbon_ledger#> .
+
+############################################################
+# Product Profile: Carbon & Subsidy Ledger
+# Consumers: PSUs, Carbon buyers, regulators (SEBI BRSR)
+# Adds a retirement/transfer ledger, buyer registry, and
+# BRSR report classes on top of core compliance.
+############################################################
+
+<https://ontology.energystack.in/carbon_ledger> a owl:Ontology ;
+    dct:title       "Sutra OS — Carbon & Subsidy Ledger Profile" ;
+    dct:description "Ledger of carbon-credit lifecycle events and BRSR-grade disclosure artifacts." ;
+    owl:versionInfo "1.0.0" ;
+    owl:imports     <https://ontology.energystack.in/core> .
+
+cl:CreditBuyer a owl:Class ;
+    rdfs:subClassOf es:EnergyEntity ;
+    rdfs:label   "Credit Buyer" ;
+    rdfs:comment "A corporate or institutional buyer of carbon credits." .
+
+cl:LedgerEvent a owl:Class ;
+    rdfs:subClassOf es:GovernanceRecord ;
+    rdfs:label   "Ledger Event" ;
+    rdfs:comment "An atomic credit lifecycle event: issue, transfer, retire." .
+
+cl:IssueEvent      a owl:Class ; rdfs:subClassOf cl:LedgerEvent ; rdfs:label "Issue Event" .
+cl:TransferEvent   a owl:Class ; rdfs:subClassOf cl:LedgerEvent ; rdfs:label "Transfer Event" .
+cl:RetirementEvent a owl:Class ; rdfs:subClassOf cl:LedgerEvent ; rdfs:label "Retirement Event" .
+
+cl:BRSRReport a owl:Class ;
+    rdfs:subClassOf es:GovernanceRecord ;
+    rdfs:label   "BRSR Report" ;
+    rdfs:comment "SEBI BRSR-aligned sustainability disclosure bundle." .
+
+cl:creditRef a owl:ObjectProperty ;
+    rdfs:domain cl:LedgerEvent ;
+    rdfs:range  es:CarbonCredit .
+
+cl:fromParty a owl:ObjectProperty ;
+    rdfs:domain cl:TransferEvent ;
+    rdfs:range  es:EnergyEntity .
+
+cl:toParty a owl:ObjectProperty ;
+    rdfs:domain cl:TransferEvent ;
+    rdfs:range  es:EnergyEntity .
+
+cl:retiredBy a owl:ObjectProperty ;
+    rdfs:domain cl:RetirementEvent ;
+    rdfs:range  cl:CreditBuyer .
+
+cl:tonnesTransferred a owl:DatatypeProperty ;
+    rdfs:domain cl:LedgerEvent ;
+    rdfs:range  xsd:double .
+
+cl:priceInrPerTonne a owl:DatatypeProperty ;
+    rdfs:domain cl:TransferEvent ;
+    rdfs:range  xsd:double .
+
+cl:reportingYear a owl:DatatypeProperty ;
+    rdfs:domain cl:BRSRReport ;
+    rdfs:range  xsd:gYear .
+
+cl:totalEmissionsTco2e a owl:DatatypeProperty ;
+    rdfs:domain cl:BRSRReport ;
+    rdfs:range  xsd:double .
+
+cl:creditsRetiredTco2e a owl:DatatypeProperty ;
+    rdfs:domain cl:BRSRReport ;
+    rdfs:range  xsd:double .

@@ -1,0 +1,83 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+
+<https://ontology.energystack.in/core/consent_policy> a owl:Ontology ;
+    rdfs:label "Consent & Policy Module" ;
+    rdfs:comment "Consent artifacts, access policies, audit trails aligned with IES Consent Layer + W3C PROV-O." .
+
+############################################################
+# Classes (3)
+############################################################
+
+es:ConsentArtifact a owl:Class ;
+    rdfs:label       "Consent Artifact" ;
+    rdfs:comment     "Signed consent granting purpose-limited access to consumer or asset data." ;
+    rdfs:subClassOf  prov:Entity .
+
+es:AccessPolicy a owl:Class ;
+    rdfs:label       "Access Policy" ;
+    rdfs:comment     "Rule defining who (role) may read/write which classes." .
+
+es:AuditEntry a owl:Class ;
+    rdfs:label       "Audit Entry" ;
+    rdfs:comment     "Single immutable entry in the audit log. Hash-anchored (optional chain)." ;
+    rdfs:subClassOf  es:GovernanceRecord .
+
+############################################################
+# Properties (5)
+############################################################
+
+es:consentSubject a owl:ObjectProperty ;
+    rdfs:domain es:ConsentArtifact ;
+    rdfs:range  es:EnergyEntity ;
+    rdfs:comment "Who the consent is about." .
+
+es:consentRequester a owl:DatatypeProperty ;
+    rdfs:domain es:ConsentArtifact ;
+    rdfs:range  xsd:string .
+
+es:consentPurpose a owl:DatatypeProperty ;
+    rdfs:domain es:ConsentArtifact ;
+    rdfs:range  xsd:string .
+
+es:consentExpiresAt a owl:DatatypeProperty ;
+    rdfs:domain es:ConsentArtifact ;
+    rdfs:range  xsd:dateTime .
+
+es:consentRevoked a owl:DatatypeProperty ;
+    rdfs:domain es:ConsentArtifact ;
+    rdfs:range  xsd:boolean .
+
+es:policyRole a owl:DatatypeProperty ;
+    rdfs:domain es:AccessPolicy ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "admin | editor | viewer" .
+
+es:policyClass a owl:DatatypeProperty ;
+    rdfs:domain es:AccessPolicy ;
+    rdfs:range  xsd:string .
+
+es:policyAction a owl:DatatypeProperty ;
+    rdfs:domain es:AccessPolicy ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "read | write | delete" .
+
+es:auditActor a owl:DatatypeProperty ;
+    rdfs:domain es:AuditEntry ;
+    rdfs:range  xsd:string .
+
+es:auditAction a owl:DatatypeProperty ;
+    rdfs:domain es:AuditEntry ;
+    rdfs:range  xsd:string .
+
+es:auditTimestamp a owl:DatatypeProperty ;
+    rdfs:domain es:AuditEntry ;
+    rdfs:range  xsd:dateTime .
+
+es:auditHash a owl:DatatypeProperty ;
+    rdfs:domain es:AuditEntry ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "SHA256 hash anchor." .

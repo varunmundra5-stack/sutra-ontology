@@ -1,0 +1,154 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+
+<https://ontology.energystack.in/core> a owl:Ontology ;
+    dct:title       "India Energy Stack — Core Ontology" ;
+    dct:description "Model-agnostic semantic data model for India's energy sector. Powers DISCOM AI, Grid Asset Digital Twin, and Carbon & Subsidy Ledger." ;
+    owl:versionInfo "1.0.0" ;
+    dct:creator     "Energy Ontology Platform (personal project)" ;
+    owl:imports     <https://ontology.energystack.in/core/grid_asset> ,
+                    <https://ontology.energystack.in/core/consumer> ,
+                    <https://ontology.energystack.in/core/measurement> ,
+                    <https://ontology.energystack.in/core/transaction> ,
+                    <https://ontology.energystack.in/core/compliance> ,
+                    <https://ontology.energystack.in/core/consent_policy> .
+
+############################################################
+# Root abstract classes
+############################################################
+
+es:EnergyEntity a owl:Class ;
+    rdfs:label   "Energy Entity" ;
+    rdfs:comment "Base class for any actor in the energy system: consumer, asset, utility, PSU, regulator." .
+
+es:EnergyEvent a owl:Class ;
+    rdfs:label   "Energy Event" ;
+    rdfs:comment "Base class for any measurable occurrence: reading, transaction, incident, inference." ;
+    rdfs:subClassOf prov:Activity .
+
+es:Location a owl:Class ;
+    rdfs:label   "Location" ;
+    rdfs:comment "Spatial anchor with lat/lon, admin boundary, and grid zone." .
+
+es:TemporalSlot a owl:Class ;
+    rdfs:label   "Temporal Slot" ;
+    rdfs:comment "Time reference for readings, forecasts, and compliance periods." .
+
+es:DataSource a owl:Class ;
+    rdfs:label   "Data Source" ;
+    rdfs:comment "Registry of a data feed (API, file, sensor stream)." ;
+    rdfs:subClassOf prov:Entity .
+
+es:AIInference a owl:Class ;
+    rdfs:label   "AI Inference" ;
+    rdfs:comment "Record of an AI model output. Model-agnostic: swap models via metadata." ;
+    rdfs:subClassOf prov:Activity .
+
+es:GovernanceRecord a owl:Class ;
+    rdfs:label   "Governance Record" ;
+    rdfs:comment "Immutable audit log for any data access, decision, or transaction." ;
+    rdfs:subClassOf prov:Activity .
+
+############################################################
+# Core properties (shared by many modules)
+############################################################
+
+es:hasLocation a owl:ObjectProperty ;
+    rdfs:label   "has location" ;
+    rdfs:domain  es:EnergyEntity ;
+    rdfs:range   es:Location .
+
+es:atTime a owl:ObjectProperty ;
+    rdfs:label   "at time" ;
+    rdfs:domain  es:EnergyEvent ;
+    rdfs:range   es:TemporalSlot .
+
+es:sourcedFrom a owl:ObjectProperty ;
+    rdfs:label   "sourced from" ;
+    rdfs:domain  es:EnergyEvent ;
+    rdfs:range   es:DataSource .
+
+es:producedBy a owl:ObjectProperty ;
+    rdfs:label   "produced by" ;
+    rdfs:domain  es:EnergyEvent ;
+    rdfs:range   es:AIInference .
+
+es:auditedBy a owl:ObjectProperty ;
+    rdfs:label   "audited by" ;
+    rdfs:range   es:GovernanceRecord .
+
+es:entityId a owl:DatatypeProperty ;
+    rdfs:label  "entity id" ;
+    rdfs:range  xsd:string .
+
+es:createdAt a owl:DatatypeProperty ;
+    rdfs:label  "created at" ;
+    rdfs:range  xsd:dateTime .
+
+es:latitude a owl:DatatypeProperty ;
+    rdfs:domain es:Location ;
+    rdfs:range  xsd:double .
+
+es:longitude a owl:DatatypeProperty ;
+    rdfs:domain es:Location ;
+    rdfs:range  xsd:double .
+
+es:adminBoundary a owl:DatatypeProperty ;
+    rdfs:domain es:Location ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "Census admin code (state/district)." .
+
+es:startTs a owl:DatatypeProperty ;
+    rdfs:domain es:TemporalSlot ;
+    rdfs:range  xsd:dateTime .
+
+es:endTs a owl:DatatypeProperty ;
+    rdfs:domain es:TemporalSlot ;
+    rdfs:range  xsd:dateTime .
+
+es:slotType a owl:DatatypeProperty ;
+    rdfs:domain es:TemporalSlot ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "e.g. billing, reporting, 15min, hourly." .
+
+############################################################
+# AIInference metadata (enables model-swapping)
+############################################################
+
+es:modelName a owl:DatatypeProperty ;
+    rdfs:domain es:AIInference ;
+    rdfs:range  xsd:string .
+
+es:modelVersion a owl:DatatypeProperty ;
+    rdfs:domain es:AIInference ;
+    rdfs:range  xsd:string .
+
+es:modelProvider a owl:DatatypeProperty ;
+    rdfs:domain es:AIInference ;
+    rdfs:range  xsd:string .
+
+es:confidence a owl:DatatypeProperty ;
+    rdfs:domain es:AIInference ;
+    rdfs:range  xsd:double .
+
+es:outputType a owl:DatatypeProperty ;
+    rdfs:domain es:AIInference ;
+    rdfs:range  xsd:string .
+
+############################################################
+# DataSource metadata
+############################################################
+
+es:sourceUrl a owl:DatatypeProperty ;
+    rdfs:domain es:DataSource ;
+    rdfs:range  xsd:anyURI .
+
+es:sourceType a owl:DatatypeProperty ;
+    rdfs:domain es:DataSource ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "api | feed | manual | sensor | file." .

@@ -1,0 +1,10 @@
+FROM stain/jena-fuseki:4.10.0
+
+# Fuseki data persists on /fuseki (Render disk mounted here).
+# Dataset is auto-created via FUSEKI_DATASET_1 env var.
+# Admin password via ADMIN_PASSWORD env var.
+
+EXPOSE 3030
+
+HEALTHCHECK --interval=15s --timeout=5s --retries=6 \
+  CMD wget -qO- http://localhost:3030/$$/ping || exit 1

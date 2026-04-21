@@ -1,0 +1,78 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+
+<https://ontology.energystack.in/core/grid_asset> a owl:Ontology ;
+    rdfs:label "Grid Asset Module" ;
+    rdfs:comment "Transformer, feeder, substation, and line asset classes. IEC CIM-aligned." .
+
+############################################################
+# Classes (6)
+############################################################
+
+es:GridAsset a owl:Class ;
+    rdfs:label       "Grid Asset" ;
+    rdfs:comment     "Physical grid asset with IES Unique Digital ID." ;
+    rdfs:subClassOf  es:EnergyEntity .
+
+es:Transformer a owl:Class ;
+    rdfs:label       "Transformer" ;
+    rdfs:subClassOf  es:GridAsset .
+
+es:Feeder a owl:Class ;
+    rdfs:label       "Feeder" ;
+    rdfs:subClassOf  es:GridAsset .
+
+es:Substation a owl:Class ;
+    rdfs:label       "Substation" ;
+    rdfs:subClassOf  es:GridAsset .
+
+es:Line a owl:Class ;
+    rdfs:label       "Transmission / Distribution Line" ;
+    rdfs:subClassOf  es:GridAsset .
+
+es:AssetState a owl:Class ;
+    rdfs:label       "Asset State" ;
+    rdfs:comment     "Operational health snapshot (score, degradation, last inspection)." ;
+    rdfs:subClassOf  es:EnergyEvent .
+
+############################################################
+# Properties (6)
+############################################################
+
+es:assetType a owl:DatatypeProperty ;
+    rdfs:domain es:GridAsset ;
+    rdfs:range  xsd:string .
+
+es:ratingKva a owl:DatatypeProperty ;
+    rdfs:domain es:GridAsset ;
+    rdfs:range  xsd:double .
+
+es:voltageLevel a owl:DatatypeProperty ;
+    rdfs:domain es:GridAsset ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "e.g. 11kV, 33kV, 66kV, 132kV." .
+
+es:installDate a owl:DatatypeProperty ;
+    rdfs:domain es:GridAsset ;
+    rdfs:range  xsd:date .
+
+es:cimClassRef a owl:DatatypeProperty ;
+    rdfs:domain es:GridAsset ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "IEC CIM 61970-301 class reference." .
+
+es:connectedTo a owl:ObjectProperty ;
+    rdfs:domain es:GridAsset ;
+    rdfs:range  es:GridAsset ;
+    rdfs:comment "Grid topology linkage (feeder→substation, transformer→feeder, etc)." .
+
+es:healthScore a owl:DatatypeProperty ;
+    rdfs:domain es:AssetState ;
+    rdfs:range  xsd:double ;
+    rdfs:comment "0-100 composite health score." .
+
+es:assetRef a owl:ObjectProperty ;
+    rdfs:domain es:AssetState ;
+    rdfs:range  es:GridAsset .

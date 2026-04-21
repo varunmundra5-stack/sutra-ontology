@@ -1,0 +1,64 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+
+<https://ontology.energystack.in/core/consumer> a owl:Ontology ;
+    rdfs:label "Consumer Module" ;
+    rdfs:comment "Electricity consumers, utilities, and service contracts." .
+
+############################################################
+# Classes (4)
+############################################################
+
+es:Consumer a owl:Class ;
+    rdfs:label       "Consumer" ;
+    rdfs:comment     "End user of electricity. Category: domestic, commercial, industrial, agricultural." ;
+    rdfs:subClassOf  es:EnergyEntity .
+
+es:Utility a owl:Class ;
+    rdfs:label       "Utility / DISCOM" ;
+    rdfs:comment     "Distribution company serving consumers." ;
+    rdfs:subClassOf  es:EnergyEntity .
+
+es:ServiceConnection a owl:Class ;
+    rdfs:label       "Service Connection" ;
+    rdfs:comment     "Link between a Consumer and the grid (meter, tariff, connection date)." ;
+    rdfs:subClassOf  es:EnergyEntity .
+
+es:Tariff a owl:Class ;
+    rdfs:label       "Tariff" ;
+    rdfs:comment     "Tariff plan rate + slabs + subsidy eligibility." .
+
+############################################################
+# Properties (4)
+############################################################
+
+es:consumerCategory a owl:DatatypeProperty ;
+    rdfs:domain es:Consumer ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "domestic | commercial | industrial | agricultural" .
+
+es:servedBy a owl:ObjectProperty ;
+    rdfs:domain es:Consumer ;
+    rdfs:range  es:Utility .
+
+es:connectedViaFeeder a owl:ObjectProperty ;
+    rdfs:domain es:ServiceConnection ;
+    rdfs:range  es:Feeder .
+
+es:tariffPlan a owl:ObjectProperty ;
+    rdfs:domain es:ServiceConnection ;
+    rdfs:range  es:Tariff .
+
+es:consumerOf a owl:ObjectProperty ;
+    rdfs:domain es:ServiceConnection ;
+    rdfs:range  es:Consumer .
+
+es:meterId a owl:DatatypeProperty ;
+    rdfs:domain es:ServiceConnection ;
+    rdfs:range  xsd:string .
+
+es:tariffSlab a owl:DatatypeProperty ;
+    rdfs:domain es:Tariff ;
+    rdfs:range  xsd:string .

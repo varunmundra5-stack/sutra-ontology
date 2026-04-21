@@ -1,0 +1,64 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix es:   <https://ontology.energystack.in/core#> .
+@prefix dt:   <https://ontology.energystack.in/digital_twin#> .
+
+############################################################
+# Product Profile: Grid Asset Digital Twin
+# Consumers: Grid Ops, Infra Cos, transmission utilities
+# Adds topology, health, and forecast classes used to drive
+# the live digital twin surface (the ArcadeDB property graph
+# is synced from this profile).
+############################################################
+
+<https://ontology.energystack.in/digital_twin> a owl:Ontology ;
+    dct:title       "Sutra OS — Grid Asset Digital Twin Profile" ;
+    dct:description "Topology, health, condition, and forecast overlay for grid assets." ;
+    owl:versionInfo "1.0.0" ;
+    owl:imports     <https://ontology.energystack.in/core> .
+
+dt:TopologyLink a owl:Class ;
+    rdfs:label   "Topology Link" ;
+    rdfs:comment "Directed connection between two grid assets (e.g. feeder → transformer)." .
+
+dt:HealthScore a owl:Class ;
+    rdfs:subClassOf es:AIInference ;
+    rdfs:label   "Health Score" ;
+    rdfs:comment "Condition-based score for an asset (0-1, 1 = healthy)." .
+
+dt:FailureForecast a owl:Class ;
+    rdfs:subClassOf es:AIInference ;
+    rdfs:label   "Failure Forecast" ;
+    rdfs:comment "Forward-looking failure probability over a stated horizon." .
+
+dt:MaintenanceWindow a owl:Class ;
+    rdfs:subClassOf es:EnergyEvent ;
+    rdfs:label   "Maintenance Window" ;
+    rdfs:comment "Planned or recommended outage window for an asset." .
+
+dt:fromAsset a owl:ObjectProperty ;
+    rdfs:domain dt:TopologyLink ;
+    rdfs:range  es:GridAsset .
+
+dt:toAsset a owl:ObjectProperty ;
+    rdfs:domain dt:TopologyLink ;
+    rdfs:range  es:GridAsset .
+
+dt:linkType a owl:DatatypeProperty ;
+    rdfs:domain dt:TopologyLink ;
+    rdfs:range  xsd:string ;
+    rdfs:comment "feeds | steps-down | steps-up | parallel." .
+
+dt:healthValue a owl:DatatypeProperty ;
+    rdfs:domain dt:HealthScore ;
+    rdfs:range  xsd:double .
+
+dt:failureProbability a owl:DatatypeProperty ;
+    rdfs:domain dt:FailureForecast ;
+    rdfs:range  xsd:double .
+
+dt:horizonDays a owl:DatatypeProperty ;
+    rdfs:domain dt:FailureForecast ;
+    rdfs:range  xsd:integer .

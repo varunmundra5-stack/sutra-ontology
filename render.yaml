@@ -1,0 +1,152 @@
+# Sutra OS — Render Blueprint
+# Deploy with: render blueprint apply (or connect this repo via Render dashboard)
+# Region: oregon  |  All services: Apache 2.0 / MIT licensed
+
+databases:
+  # TimescaleDB extension not available on managed Render Postgres —
+  # our timescale.py falls back gracefully to a plain table.
+  - name: sutra-db
+    databaseName: sutra_ontology
+    user: sutra
+    plan: starter
+    region: oregon
+    postgresMajorVersion: 16
+
+services:
+  # ---- Semantic store (RDF + OWL reasoning) --------------------------------
+  - type: web
+    name: sutra-fuseki
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: Dockerfile.fuseki
+    plan: starter
+    region: oregon
+    healthCheckPath: /$/ping
+    envVars:
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: FUSEKI_DATASET_1
+        value: energy
+    disk:
+      name: fuseki-data
+      mountPath: /fuseki
+      sizeGB: 10
+
+  # ---- Policy engine (OPA) -------------------------------------------------
+  - type: web
+    name: sutra-opa
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: Dockerfile.opa
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+
+  # ---- Multi-model graph store (ArcadeDB) ----------------------------------
+  - type: web
+    name: sutra-arcadedb
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: Dockerfile.arcadedb
+    plan: starter
+    region: oregon
+    healthCheckPath: /api/v1/ready
+    envVars:
+      - key: JAVA_OPTS
+        value: >-
+          -Darcadedb.server.rootPassword=${ARCADEDB_PASSWORD}
+          -Darcadedb.server.defaultDatabases=sutra[root:${ARCADEDB_PASSWORD}]
+      - key: ARCADEDB_PASSWORD
+        generateValue: true
+    disk:
+      name: arcadedb-data
+      mountPath: /home/arcadedb/databases
+      sizeGB: 5
+
+  # ---- Consent + session cache (Valkey / Redis-compatible) -----------------
+  - type: redis
+    name: sutra-valkey
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+
+  # ---- API (FastAPI) -------------------------------------------------------
+  - type: web
+    name: sutra-backend
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: backend/Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sutra-db
+          property: connectionString
+      - key: VALKEY_URL
+        fromService:
+          type: redis
+          name: sutra-valkey
+          property: connectionString
+      - key: FUSEKI_URL
+        fromService:
+          type: web
+          name: sutra-fuseki
+          property: host
+      - key: FUSEKI_DATASET
+        value: energy
+      - key: FUSEKI_ADMIN_PASSWORD
+        fromService:
+          type: web
+          name: sutra-fuseki
+          envVarKey: ADMIN_PASSWORD
+      - key: OPA_URL
+        fromService:
+          type: web
+          name: sutra-opa
+          property: host
+      - key: ARCADEDB_URL
+        fromService:
+          type: web
+          name: sutra-arcadedb
+          property: host
+      - key: ARCADEDB_PASSWORD
+        fromService:
+          type: web
+          name: sutra-arcadedb
+          envVarKey: ARCADEDB_PASSWORD
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: sutra-frontend
+          property: host
+      - key: SEED_ADMIN_EMAIL
+        value: admin@sutra.local
+      - key: SEED_ADMIN_PASSWORD
+        generateValue: true
+      - key: ONTOLOGY_DIR
+        value: /app/ontology
+      - key: SHACL_SHAPES_FILE
+        value: /app/ontology/shacl_shapes.ttl
+
+  # ---- UI (React + Vite → nginx) -------------------------------------------
+  - type: web
+    name: sutra-frontend
+    runtime: docker
+    dockerContext: ./frontend
+    dockerfilePath: frontend/Dockerfile.prod
+    plan: starter
+    region: oregon
+    healthCheckPath: /nginx-health
+    buildFilter:
+      paths:
+        - frontend/**
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: sutra-backend
+          property: host

@@ -1,0 +1,176 @@
+version: "3.9"
+
+# Sutra OS — Energy Ontology
+# Fully open-source stack (all components Apache 2.0 / MIT):
+#   - Schema         : OWL 2 + SHACL (loaded as .ttl files)
+#   - Semantic store : Apache Jena Fuseki  (RDF + OWL reasoning, SPARQL)
+#   - Graph store    : ArcadeDB            (Cypher + SPARQL + multi-model)
+#   - Time-series    : TimescaleDB         (high-frequency telemetry + auth DB)
+#   - Consent cache  : Valkey              (Redis fork, Apache 2.0)
+#   - Policy engine  : OPA core            (governance / ABAC)
+#   - API            : FastAPI             (backend)
+#   - UI             : React + Vite        (frontend)
+
+services:
+  # ---------- Relational + Time-series (single Postgres-compatible service) ----------
+  db:
+    image: timescale/timescaledb:2.17.2-pg16
+    container_name: sutra_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sutra}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sutra_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-sutra_ontology}
+    ports:
+      - "5433:5432"
+    volumes:
+      - sutra_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sutra} -d ${POSTGRES_DB:-sutra_ontology}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ---------- Semantic store (RDF + OWL reasoning) ----------
+  fuseki:
+    image: stain/jena-fuseki:4.10.0
+    container_name: sutra_fuseki
+    restart: unless-stopped
+    environment:
+      ADMIN_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:-fuseki_admin}
+      FUSEKI_DATASET_1: energy
+    ports:
+      - "3030:3030"
+    volumes:
+      - sutra_fuseki_data:/fuseki
+      - ./ontology:/ontology:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3030/$$/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------- Multi-model graph store (Cypher + SPARQL) for product-profile graphs ----------
+  arcadedb:
+    image: arcadedata/arcadedb:24.11.1
+    container_name: sutra_arcadedb
+    restart: unless-stopped
+    environment:
+      JAVA_OPTS: >-
+        -Darcadedb.server.rootPassword=${ARCADEDB_PASSWORD:-arcadedb_dev_pw}
+        -Darcadedb.server.defaultDatabases=sutra[root:${ARCADEDB_PASSWORD:-arcadedb_dev_pw}]
+        -Darcadedb.server.plugins=GremlinServer:com.arcadedb.server.gremlin.GremlinServerPlugin
+    ports:
+      - "2480:2480"   # HTTP / Studio
+      - "2424:2424"   # Binary protocol
+    volumes:
+      - sutra_arcadedb_data:/home/arcadedb/databases
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:2480/api/v1/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  # ---------- Consent / session cache (Apache-licensed Redis fork) ----------
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: sutra_valkey
+    restart: unless-stopped
+    command: ["valkey-server", "--save", "60", "1", "--loglevel", "warning"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - sutra_valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ---------- Policy engine (OPA) ----------
+  opa:
+    image: openpolicyagent/opa:0.69.0-rootless
+    container_name: sutra_opa
+    restart: unless-stopped
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "--log-level=info"
+      - "/policies"
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./policies:/policies:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8181/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------- API (FastAPI) ----------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sutra_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-sutra}:${POSTGRES_PASSWORD:-sutra_dev_pw}@db:5432/${POSTGRES_DB:-sutra_ontology}
+      FUSEKI_URL: http://fuseki:3030
+      FUSEKI_DATASET: energy
+      FUSEKI_ADMIN_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:-fuseki_admin}
+      ARCADEDB_URL: http://arcadedb:2480
+      ARCADEDB_USER: root
+      ARCADEDB_PASSWORD: ${ARCADEDB_PASSWORD:-arcadedb_dev_pw}
+      ARCADEDB_DATABASE: sutra
+      VALKEY_URL: redis://valkey:6379/0
+      OPA_URL: http://opa:8181
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod-super-long-string}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-1440}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@sutra.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin123}
+      ONTOLOGY_DIR: /ontology
+      SHACL_SHAPES_FILE: /ontology/shacl_shapes.ttl
+    depends_on:
+      db:
+        condition: service_healthy
+      fuseki:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+      opa:
+        condition: service_healthy
+      # arcadedb is optional at boot — backend will retry lazily
+      arcadedb:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./ontology:/ontology:ro
+      - ./policies:/policies:ro
+
+  # ---------- UI (React + Vite) ----------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sutra_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+
+volumes:
+  sutra_pg_data:
+  sutra_fuseki_data:
+  sutra_arcadedb_data:
+  sutra_valkey_data:
