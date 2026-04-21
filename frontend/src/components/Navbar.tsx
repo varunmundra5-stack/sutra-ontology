@@ -32,20 +32,23 @@ export default function Navbar() {
               Home
             </NavLink>
             <NavLink to="/ontology" className={linkClass}>
-              Ontology
+              Knowledge Graph
             </NavLink>
             <NavLink to="/instances" className={linkClass}>
-              Entities
+              Grid Assets
             </NavLink>
             <NavLink to="/analytics" className={linkClass}>
               Analytics
             </NavLink>
             <NavLink to="/sparql" className={linkClass}>
-              SPARQL
+              Query Lab
+            </NavLink>
+            <NavLink to="/ai" className={linkClass}>
+              AI Models
             </NavLink>
             {hasRole("admin", "editor") && (
               <NavLink to="/governance" className={linkClass}>
-                Governance
+                Compliance
               </NavLink>
             )}
             {hasRole("admin") && (

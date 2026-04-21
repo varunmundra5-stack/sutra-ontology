@@ -42,13 +42,13 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
           <QuickCard
             emoji="📘"
-            title="Browse the ontology"
+            title="Browse the Knowledge Graph"
             desc="See every class and property in plain language."
             to="/ontology"
           />
           <QuickCard
             emoji="🔎"
-            title="Find entities"
+            title="Find Grid Assets"
             desc="Look up transformers, feeders, consumers, and more."
             to="/instances"
           />
@@ -60,7 +60,7 @@ export default function Dashboard() {
           />
           <QuickCard
             emoji="🧪"
-            title="SPARQL playground"
+            title="Query Lab"
             desc="For power users: write queries directly."
             to="/sparql"
           />

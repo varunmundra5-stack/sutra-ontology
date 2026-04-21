@@ -61,6 +61,7 @@ def load_ttl_file(path: str) -> int:
             _data_url(),
             content=data,
             headers={"Content-Type": "text/turtle; charset=utf-8"},
+            auth=ADMIN_AUTH,
         )
         r.raise_for_status()
     return len(data)
@@ -95,6 +96,7 @@ def sparql_update(query: str) -> None:
             _update_url(),
             data={"update": query},
             headers={"Accept": "application/json"},
+            auth=ADMIN_AUTH,
         )
         r.raise_for_status()
 

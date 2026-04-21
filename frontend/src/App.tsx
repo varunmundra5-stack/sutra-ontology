@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import { Protected } from "./components/Protected";
 import Admin from "./pages/Admin";
+import AiModels from "./pages/AiModels";
 import Analytics from "./pages/Analytics";
 import Dashboard from "./pages/Dashboard";
 import Governance from "./pages/Governance";
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/instances" element={<Instances />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/sparql" element={<Sparql />} />
+        <Route path="/ai" element={<AiModels />} />
         <Route
           path="/governance"
           element={

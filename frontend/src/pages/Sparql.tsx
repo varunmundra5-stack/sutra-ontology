@@ -56,7 +56,7 @@ export default function Sparql() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="h1">SPARQL playground</h1>
+        <h1 className="h1">Query Lab</h1>
         <p className="muted text-sm mt-1">
           Read-only SPARQL against the graph. Mutations are blocked here by design.
         </p>

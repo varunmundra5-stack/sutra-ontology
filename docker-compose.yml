@@ -128,8 +128,8 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5174,http://localhost:3000}
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@sutra.local}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin123}
-      ONTOLOGY_DIR: /ontology
-      SHACL_SHAPES_FILE: /ontology/shacl_shapes.ttl
+      ONTOLOGY_DIR: /app/ontology
+      SHACL_SHAPES_FILE: /app/ontology/shacl_shapes.ttl
     depends_on:
       db:
         condition: service_healthy

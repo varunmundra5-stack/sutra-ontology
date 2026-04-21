@@ -35,7 +35,7 @@ export default function Instances() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="h1">Entities</h1>
+        <h1 className="h1">Grid Assets</h1>
         <p className="muted text-sm mt-1">
           Pick a class to see real instances — transformers, feeders, consumers, readings, and more.
         </p>

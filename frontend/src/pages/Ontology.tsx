@@ -46,7 +46,7 @@ export default function Ontology() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="h1">Ontology</h1>
+          <h1 className="h1">Knowledge Graph</h1>
           <p className="muted text-sm mt-1">
             Every class is a <em>thing</em> (like a Transformer). Every property is a{" "}
             <em>fact</em> about a thing (like its rating).

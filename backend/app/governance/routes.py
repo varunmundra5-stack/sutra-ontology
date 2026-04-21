@@ -71,8 +71,16 @@ def register_consent(body: ConsentIn, user: User = Depends(require_editor)) -> d
     if not ok:
         raise HTTPException(400, f"SHACL validation failed: {report[:500]}")
 
-    # 3. Write to Fuseki
-    fuseki.sparql_update(f"INSERT DATA {{ {ttl.replace(chr(10), ' ')} }}")
+    # 3. Write to Fuseki  (strip @prefix lines — they're Turtle syntax, invalid in SPARQL)
+    body_ttl = "\n".join(
+        line for line in ttl.splitlines()
+        if not line.strip().lower().startswith("@prefix")
+    ).replace("\n", " ")
+    fuseki.sparql_update(
+        "PREFIX es: <https://ontology.energystack.in/core#>\n"
+        "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n"
+        f"INSERT DATA {{ {body_ttl} }}"
+    )
 
     # 4. Cache it in Valkey
     payload = {

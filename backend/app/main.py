@@ -19,6 +19,7 @@ from .ontology import fuseki
 from .ontology.routes import router as ontology_router
 from .ontology.ingest import router as ingest_router
 from .ontology.timeseries_routes import router as timeseries_router
+from .ai.routes import router as ai_router, _seed_demo_models
 
 log = logging.getLogger("uvicorn.error")
 
@@ -56,6 +57,33 @@ def _seed_admin() -> None:
         db.close()
 
 
+def _seed_default_users() -> None:
+    """Seed demo users with different RBAC roles."""
+    DEMO_USERS = [
+        {"email": "editor@sutra.local",  "password": "editor123",  "full_name": "Grid Editor",   "role": Role.editor},
+        {"email": "analyst@sutra.local", "password": "analyst123", "full_name": "Data Analyst",  "role": Role.viewer},
+        {"email": "viewer@sutra.local",  "password": "viewer123",  "full_name": "Read Only User", "role": Role.viewer},
+        {"email": "discom@sutra.local",  "password": "discom123",  "full_name": "DISCOM Officer", "role": Role.editor},
+    ]
+    db = SessionLocal()
+    try:
+        for u in DEMO_USERS:
+            if not db.query(User).filter(User.email == u["email"]).first():
+                db.add(User(
+                    email=u["email"],
+                    hashed_password=hash_password(u["password"]),
+                    full_name=u["full_name"],
+                    role=u["role"],
+                ))
+        db.commit()
+        log.info("Demo users seeded.")
+    except Exception as e:
+        log.warning(f"Demo user seeding failed: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 def _seed_ontology() -> None:
     try:
         fuseki.ensure_dataset()
@@ -86,6 +114,16 @@ def _critical_startup() -> None:
         _seed_admin()
     except Exception as e:
         log.error(f"Admin seeding failed: {e}")
+
+    try:
+        _seed_default_users()
+    except Exception as e:
+        log.error(f"Default user seeding failed: {e}")
+
+    try:
+        _seed_demo_models()
+    except Exception as e:
+        log.warning(f"AI demo model seeding skipped: {e}")
 
     try:
         timescale.ensure_hypertable()
@@ -189,6 +227,7 @@ app.include_router(ontology_router)
 app.include_router(governance_router)
 app.include_router(ingest_router)
 app.include_router(timeseries_router)
+app.include_router(ai_router)
 
 
 @app.get("/health")

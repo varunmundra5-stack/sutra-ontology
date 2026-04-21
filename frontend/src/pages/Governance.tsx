@@ -90,7 +90,7 @@ export default function Governance() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="h1">Governance</h1>
+        <h1 className="h1">Compliance</h1>
         <p className="muted text-sm mt-1">
           Consent artifacts, OPA policy checks, and SHACL contract validation — the runtime
           guardrails between raw feeds and the graph.

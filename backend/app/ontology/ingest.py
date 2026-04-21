@@ -21,6 +21,7 @@ Flow:
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -37,6 +38,33 @@ from . import fuseki
 
 log = logging.getLogger("uvicorn.error")
 router = APIRouter(prefix="/ingest", tags=["ingest"])
+
+_PREFIX_RE = re.compile(r"@prefix\s+(\w*:)\s+<([^>]+)>\s*\.", re.IGNORECASE)
+
+
+def _turtle_to_sparql_update(turtle: str) -> str:
+    """Convert a Turtle snippet (with @prefix) into a valid SPARQL UPDATE string.
+
+    SPARQL UPDATE uses ``PREFIX ns: <uri>`` (no @ or trailing dot), and the
+    triples go inside ``INSERT DATA { ... }``.
+    """
+    sparql_prefixes: list[str] = []
+    body_lines: list[str] = []
+    for line in turtle.splitlines():
+        m = _PREFIX_RE.match(line.strip())
+        if m:
+            sparql_prefixes.append(f"PREFIX {m.group(1)} <{m.group(2)}>")
+        else:
+            body_lines.append(line)
+    body = " ".join(l for l in body_lines if l.strip())
+    prefix_block = "\n".join(sparql_prefixes)
+    return f"{prefix_block}\nINSERT DATA {{ {body} }}"
+
+
+@router.get("/adapters")
+def list_adapters() -> dict:
+    """Return the list of available ingest adapter types."""
+    return {"adapters": list(ADAPTERS.keys())}
 
 
 class IngestIn(BaseModel):
@@ -78,9 +106,9 @@ def ingest_raw(body: IngestIn, user: User = Depends(require_editor)) -> dict[str
         if not ok:
             raise HTTPException(400, f"SHACL validation failed: {report[:500]}")
 
-    # 5. Write to Fuseki
+    # 5. Write to Fuseki  (convert @prefix Turtle → SPARQL PREFIX + INSERT DATA)
     if result.turtle.strip():
-        fuseki.sparql_update(f"INSERT DATA {{ {result.turtle.replace(chr(10), ' ')} }}")
+        fuseki.sparql_update(_turtle_to_sparql_update(result.turtle))
 
     # 6. Stream telemetry into TimescaleDB
     rows_written = timescale.insert_readings_bulk(result.timeseries) if result.timeseries else 0
