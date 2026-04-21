@@ -1,4 +1,4 @@
-FROM openpolicyagent/opa:0.69.0-rootless
+FROM openpolicyagent/opa:1.15.2
 
 # Bake policies in at build time.
 # On Render, the policies directory is part of the image so no volume mount needed.

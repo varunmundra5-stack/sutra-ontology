@@ -33,7 +33,7 @@ services:
 
   # ---------- Semantic store (RDF + OWL reasoning) ----------
   fuseki:
-    image: stain/jena-fuseki:4.10.0
+    image: stain/jena-fuseki:5.1.0
     container_name: sutra_fuseki
     restart: unless-stopped
     environment:
@@ -52,7 +52,7 @@ services:
 
   # ---------- Multi-model graph store (Cypher + SPARQL) for product-profile graphs ----------
   arcadedb:
-    image: arcadedata/arcadedb:24.11.1
+    image: arcadedata/arcadedb:26.3.2
     container_name: sutra_arcadedb
     restart: unless-stopped
     environment:
@@ -89,7 +89,7 @@ services:
 
   # ---------- Policy engine (OPA) ----------
   opa:
-    image: openpolicyagent/opa:0.69.0-rootless
+    image: openpolicyagent/opa:1.15.2
     container_name: sutra_opa
     restart: unless-stopped
     command:
@@ -111,8 +111,8 @@ services:
   # ---------- API (FastAPI) ----------
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: sutra_backend
     restart: unless-stopped
     environment:
@@ -149,7 +149,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
-      - ./ontology:/ontology:ro
+      - ./ontology:/app/ontology:ro
       - ./policies:/policies:ro
 
   # ---------- UI (React + Vite) ----------

@@ -1,4 +1,4 @@
-FROM stain/jena-fuseki:4.10.0
+FROM stain/jena-fuseki:5.1.0
 
 # Fuseki data persists on /fuseki (Render disk mounted here).
 # Dataset is auto-created via FUSEKI_DATASET_1 env var.

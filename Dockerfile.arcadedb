@@ -1,4 +1,4 @@
-FROM arcadedata/arcadedb:24.11.1
+FROM arcadedata/arcadedb:26.3.2
 
 # ArcadeDB data persists on /home/arcadedb/databases (Render disk mounted here).
 # Root password set via JAVA_OPTS env var.
