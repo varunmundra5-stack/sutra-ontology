@@ -13,7 +13,7 @@ class UserCreate(BaseModel):
 
 class UserOut(BaseModel):
     id: int
-    email: EmailStr
+    email: str  # plain str — seed admin uses .local domain which EmailStr rejects
     full_name: str | None
     role: Role
     created_at: datetime
@@ -23,7 +23,7 @@ class UserOut(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str  # plain str — allows .local / internal domains
     password: str
 
 
