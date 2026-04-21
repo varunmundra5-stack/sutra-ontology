@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 from contextlib import asynccontextmanager
@@ -73,40 +74,67 @@ def _seed_ontology() -> None:
     log.info(f"Loaded {len(loaded)} TTL files → {n} triples")
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # 1. Relational / time-series schema
-    Base.metadata.create_all(bind=engine)
-    _seed_admin()
-    timescale.ensure_hypertable()
+async def _background_init() -> None:
+    """Slow startup tasks run in thread-pool after server is live.
 
-    # 2. Wait for dependencies (soft — app stays up regardless)
-    _wait_for(f"{settings.fuseki_url}/$/ping", "Fuseki")
-    _wait_for(f"{settings.opa_url}/health", "OPA", max_wait_s=30)
+    Keeps the event loop free so /health passes immediately and Render
+    does not kill the container during the Fuseki / OPA warm-up window.
+    """
+    loop = asyncio.get_event_loop()
 
-    # 3. Load ontology + shapes into Fuseki
+    # Wait for soft dependencies (blocking calls → thread pool)
+    await loop.run_in_executor(
+        None, lambda: _wait_for(f"{settings.fuseki_url}/$/ping", "Fuseki")
+    )
+    await loop.run_in_executor(
+        None, lambda: _wait_for(f"{settings.opa_url}/health", "OPA", max_wait_s=30)
+    )
+
+    # Load ontology into Fuseki
     try:
-        _seed_ontology()
+        await loop.run_in_executor(None, _seed_ontology)
     except Exception as e:
         log.error(f"Ontology seeding failed (server still up): {e}")
 
-    # 4. Preload SHACL shapes into memory
+    # Preload SHACL shapes
     try:
-        _ = shacl_validator._load_shapes()
+        await loop.run_in_executor(None, shacl_validator._load_shapes)
     except Exception as e:
         log.warning(f"SHACL preload failed: {e}")
 
-    # 5. Touch Valkey + ArcadeDB (non-fatal)
-    if valkey_client.ping():
+    # Touch Valkey + ArcadeDB (non-fatal)
+    valkey_ok = await loop.run_in_executor(None, valkey_client.ping)
+    if valkey_ok:
         log.info("Valkey: connected.")
-    if arcadedb_client.health():
+    arcade_ok = await loop.run_in_executor(None, arcadedb_client.health)
+    if arcade_ok:
         try:
-            arcadedb_client.ensure_database()
+            await loop.run_in_executor(None, arcadedb_client.ensure_database)
             log.info("ArcadeDB: connected.")
         except Exception as e:
             log.warning(f"ArcadeDB ensure_database skipped: {e}")
 
+    log.info("Background init complete.")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    loop = asyncio.get_event_loop()
+
+    # --- Fast critical startup (run in thread pool so event loop stays free) ---
+    # 1. Relational / time-series schema
+    await loop.run_in_executor(
+        None, lambda: Base.metadata.create_all(bind=engine)
+    )
+    await loop.run_in_executor(None, _seed_admin)
+    await loop.run_in_executor(None, timescale.ensure_hypertable)
+
+    # --- Server is ready to serve requests from this point ---
+    # Kick off slow initialisation (Fuseki wait, ontology load) in background
+    asyncio.create_task(_background_init())
+
     yield
+    # Shutdown: nothing to tear down currently
 
 
 app = FastAPI(
