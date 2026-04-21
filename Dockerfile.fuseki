@@ -4,6 +4,10 @@ FROM stain/jena-fuseki:5.1.0
 # Dataset is auto-created via FUSEKI_DATASET_1 env var.
 # Admin password via ADMIN_PASSWORD env var.
 
+# Cap JVM heap so Fuseki stays within 512 MB free-tier RAM.
+# Jena Fuseki reads JVM_ARGS at startup.
+ENV JVM_ARGS="-Xms64m -Xmx300m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+
 EXPOSE 3030
 
 HEALTHCHECK --interval=15s --timeout=5s --retries=6 \
