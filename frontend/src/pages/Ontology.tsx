@@ -43,18 +43,17 @@ export default function Ontology() {
   }, [selected, props]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-slide-in">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="h1">Knowledge Graph</h1>
-          <p className="muted text-sm mt-1">
-            Every class is a <em>thing</em> (like a Transformer). Every property is a{" "}
-            <em>fact</em> about a thing (like its rating).
+          <h1 className="page-title">Knowledge Graph</h1>
+          <p className="page-subtitle mt-1">
+            Classes are <em>things</em> (e.g. Transformer) · Properties are <em>facts</em> about things
           </p>
         </div>
         <div className="flex items-center gap-2">
           <input
-            placeholder="Search by name or description…"
+            placeholder="Search classes, properties…"
             className="input w-64 md:w-80"
             value={q}
             onChange={(e) => setQ(e.target.value)}

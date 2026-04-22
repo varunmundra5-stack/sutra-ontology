@@ -1,4 +1,5 @@
-const BASE = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
+// Empty-string base → Vite proxy handles routing (dev); set VITE_API_URL for production
+const BASE = (import.meta.env.VITE_API_URL as string) || "";
 
 export class ApiError extends Error {
   status: number;

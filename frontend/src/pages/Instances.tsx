@@ -33,16 +33,19 @@ export default function Instances() {
   const selectedCls = classes.find((c) => c.uri === selected);
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="h1">Grid Assets</h1>
-        <p className="muted text-sm mt-1">
-          Pick a class to see real instances — transformers, feeders, consumers, readings, and more.
-        </p>
+    <div className="space-y-5 animate-slide-in">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Grid Assets</h1>
+          <p className="page-subtitle">
+            Browse instances across all asset classes — transformers, feeders, consumers, and more
+          </p>
+        </div>
+        {data && <span className="chip">{data.count} instances</span>}
       </div>
 
       <div className="card">
-        <label className="label">Class</label>
+        <label className="label">Select asset class</label>
         <select
           className="input"
           value={selected}
@@ -57,13 +60,13 @@ export default function Instances() {
         {selectedCls?.comment && <p className="text-xs muted mt-2">{selectedCls.comment}</p>}
       </div>
 
-      {err && (
-        <div className="card border-rose-300 bg-rose-50 dark:border-rose-900 dark:bg-rose-950/40">
-          <p className="text-sm text-rose-700 dark:text-rose-300">{err}</p>
+      {err && <div className="alert-error">{err}</div>}
+
+      {loading && (
+        <div className="card space-y-3">
+          {[1,2,3].map(i => <div key={i} className="h-12 bg-slate-50 dark:bg-slate-800 rounded-lg animate-pulse" />)}
         </div>
       )}
-
-      {loading && <div className="muted text-sm">Loading instances…</div>}
 
       {data && !loading && (
         <div className="card p-0 overflow-hidden">
